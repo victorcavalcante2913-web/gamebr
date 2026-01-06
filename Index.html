@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>GameBR 🕹️</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{
+margin:0;
+font-family:Arial, sans-serif;
+background:linear-gradient(135deg,#1e3c72,#2a5298);
+color:white;
+text-align:center;
+}
+h1,h2{margin:10px}
+button{
+padding:10px 18px;
+margin:6px;
+border:none;
+border-radius:10px;
+background:#00d4ff;
+color:white;
+font-size:15px;
+cursor:pointer;
+}
+button:hover{background:#00a8cc}
+.hidden{display:none}
+.box{
+background:rgba(0,0,0,.3);
+padding:15px;
+border-radius:15px;
+margin:15px auto;
+max-width:350px;
+}
+.grid{
+display:grid;
+grid-template-columns:repeat(3,90px);
+gap:5px;
+justify-content:center;
+margin:auto;
+}
+.cell{
+width:90px;height:90px;
+background:rgba(255,255,255,0.2);
+font-size:50px;
+display:flex;
+align-items:center;
+justify-content:center;
+cursor:pointer;
+}
+canvas{
+background:black;
+border:3px solid white;
+margin-top:10px;
+}
+.rank{
+margin-top:10px;
+font-size:14px;
+}
+</style>
+</head>
+<body>
+
+<h1>🎮 GameBR 🕹️</h1>
+
+<!-- MENU -->
+<div id="menu" class="box">
+<h2>Menu</h2>
+<button onclick="openGame('velha')">❌⭕ Jogo da Velha</button><br>
+<button onclick="openGame('snake')">🐍 Snake</button><br>
+<button onclick="openGame('ppt')">✊✋✌️ Pedra Papel Tesoura</button>
+</div>
+
+<!-- JOGO DA VELHA -->
+<div id="velha" class="box hidden">
+<h2>❌⭕ Jogo da Velha</h2>
+<button onclick="velhaMode='2p';resetVelha()">👥 2 Jogadores</button>
+<button onclick="velhaMode='bot';resetVelha()">🤖 Contra Bot</button>
+<p id="velhaStatus">Vez do X</p>
+<div class="grid" id="velhaBoard"></div>
+<div class="rank">🏆 X: <span id="vx">0</span> | O: <span id="vo">0</span></div>
+<button onclick="back()">⬅ Voltar</button>
+</div>
+
+<!-- SNAKE -->
+<div id="snake" class="box hidden">
+<h2>🐍 Snake</h2>
+<button onclick="startSnake(false)">👤 Jogador</button>
+<button onclick="startSnake(true)">🤖 Bot</button><br>
+<canvas id="snakeCanvas" width="300" height="300"></canvas>
+<div class="rank">🏆 Recorde: <span id="snakeRank">0</span></div>
+<button onclick="back()">⬅ Voltar</button>
+</div>
+
+<!-- PEDRA PAPEL TESOURA -->
+<div id="ppt" class="box hidden">
+<h2>✊✋✌️ Pedra Papel Tesoura</h2>
+<button onclick="pptMode='2p'">👥 2 Jogadores</button>
+<button onclick="pptMode='bot'">🤖 Contra Bot</button>
+<p id="pptStatus">Escolha!</p>
+<button onclick="pptPlay('pedra')">✊</button>
+<button onclick="pptPlay('papel')">✋</button>
+<button onclick="pptPlay('tesoura')">✌️</button>
+<div class="rank">🏆 Vitórias: <span id="pptRank">0</span></div>
+<button onclick="back()">⬅ Voltar</button>
+</div>
+
+<script>
+// ===== MENU =====
+function openGame(id){
+["menu","velha","snake","ppt"].forEach(e=>document.getElementById(e).classList.add("hidden"));
+document.getElementById(id).classList.remove("hidden");
+}
+function back(){location.reload()}
+
+// ===== RANKING BASE =====
+let vx=+localStorage.vx||0, vo=+localStorage.vo||0;
+document.getElementById("vx").innerText=vx;
+document.getElementById("vo").innerText=vo;
+
+let snakeRecord=+localStorage.snakeRecord||0;
+document.getElementById("snakeRank").innerText=snakeRecord;
+
+let pptWins=+localStorage.pptWins||0;
+document.getElementById("pptRank").innerText=pptWins;
+
+// ===== JOGO DA VELHA =====
+let velhaBoard=["","","","","","","","",""];
+let velhaPlayer="X";
+let velhaMode="2p";
+const velhaDiv=document.getElementById("velhaBoard");
+const velhaStatus=document.getElementById("velhaStatus");
+
+function drawVelha(){
+velhaDiv.innerHTML="";
+velhaBoard.forEach((v,i)=>{
+let c=document.createElement("div");
+c.className="cell";
+c.innerText=v;
+c.onclick=()=>velhaPlay(i);
+velhaDiv.appendChild(c);
+});
+}
+function velhaPlay(i){
+if(velhaBoard[i])return;
+velhaBoard[i]=velhaPlayer;
+if(checkVelha(velhaPlayer)){winVelha(velhaPlayer);return;}
+velhaPlayer=velhaPlayer=="X"?"O":"X";
+velhaStatus.innerText="Vez do "+velhaPlayer;
+drawVelha();
+if(velhaMode=="bot" && velhaPlayer=="O") setTimeout(botVelha,400);
+}
+function botVelha(){
+let i=velhaBoard.findIndex(v=>v=="");
+if(i>-1) velhaPlay(i);
+}
+function checkVelha(p){
+const w=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+return w.some(c=>c.every(i=>velhaBoard[i]==p));
+}
+function winVelha(p){
+velhaStatus.innerText=p+" ganhou!";
+if(p=="X"){vx++;localStorage.vx=vx;document.getElementById("vx").innerText=vx;}
+else{vo++;localStorage.vo=vo;document.getElementById("vo").innerText=vo;}
+velhaDiv.style.pointerEvents="none";
+}
+function resetVelha(){
+velhaBoard=["","","","","","","","",""];
+velhaPlayer="X";
+velhaStatus.innerText="Vez do X";
+velhaDiv.style.pointerEvents="auto";
+drawVelha();
+}
+drawVelha();
+
+// ===== SNAKE =====
+const ctx=document.getElementById("snakeCanvas").getContext("2d");
+let snake,food,dir,autoSnake=false,score=0,interval;
+
+function startSnake(bot){
+clearInterval(interval);
+autoSnake=bot;
+snake=[[10,10]];
+food=[5,5];
+dir=[1,0];
+score=0;
+interval=setInterval(snakeGame,200);
+}
+document.addEventListener("keydown",e=>{
+if(e.key=="ArrowUp")dir=[0,-1];
+if(e.key=="ArrowDown")dir=[0,1];
+if(e.key=="ArrowLeft")dir=[-1,0];
+if(e.key=="ArrowRight")dir=[1,0];
+});
+function snakeGame(){
+ctx.clearRect(0,0,300,300);
+if(autoSnake) dir=[Math.sign(food[0]-snake[0][0]),Math.sign(food[1]-snake[0][1])];
+let h=[snake[0][0]+dir[0],snake[0][1]+dir[1]];
+if(h[0]<0||h[1]<0||h[0]>14||h[1]>14){endSnake();return;}
+snake.unshift(h);
+if(h[0]==food[0]&&h[1]==food[1]){
+score++;
+food=[Math.floor(Math.random()*15),Math.floor(Math.random()*15)];
+}else snake.pop();
+snake.forEach(s=>ctx.fillRect(s[0]*20,s[1]*20,18,18));
+ctx.fillRect(food[0]*20,food[1]*20,18,18);
+}
+function endSnake(){
+clearInterval(interval);
+if(score>snakeRecord){
+snakeRecord=score;
+localStorage.snakeRecord=snakeRecord;
+document.getElementById("snakeRank").innerText=snakeRecord;
+}
+}
+
+// ===== PEDRA PAPEL TESOURA =====
+let pptMode="bot";
+function pptPlay(p){
+let bot=["pedra","papel","tesoura"][Math.floor(Math.random()*3)];
+let res="";
+if(p==bot) res="Empate!";
+else if(
+(p=="pedra"&&bot=="tesoura")||
+(p=="papel"&&bot=="pedra")||
+(p=="tesoura"&&bot=="papel")
+){
+res="Você ganhou! 🎉";
+pptWins++; localStorage.pptWins=pptWins;
+document.getElementById("pptRank").innerText=pptWins;
+}else res="Você perdeu 😢";
+document.getElementById("pptStatus").innerText="Você: "+p+" | Bot: "+bot+" → "+res;
+}
+</script>
+
+</body>
+</html>
+<!-- ===== PARTE 2 – JOGOS EXTRAS ===== -->
+
+<!-- CLIQUE RÁPIDO -->
+<div id="click" class="box hidden">
+<h2>🔢 Clique Rápido</h2>
+<button onclick="startClick(false)">👥 2 Jogadores</button>
+<button onclick="startClick(true)">🤖 Contra Bot</button>
+<p>P1: <span id="c1">0</span> | P2/Bot: <span id="c2">0</span></p>
+<div class="rank">🏆 Recorde: <span id="clickRank">0</span></div>
+<button onclick="clickP1()">P1</button>
+<button onclick="clickP2()">P2 / Bot</button><br>
+<button onclick="back()">⬅ Voltar</button>
+</div>
+
+<!-- ADIVINHE O NÚMERO -->
+<div id="guess" class="box hidden">
+<h2>🔢 Adivinhe o Número</h2>
+<p>De 1 a 10</p>
+<input id="guessInput" type="number" min="1" max="10">
+<button onclick="guessPlay()">Tentar</button>
+<p id="guessStatus"></p>
+<div class="rank">🏆 Vitórias: <span id="guessRank">0</span></div>
+<button onclick="back()">⬅ Voltar</button>
+</div>
+
+<!-- PONG -->
+<div id="pong" class="box hidden">
+<h2>🏓 Pong</h2>
+<button onclick="startPong(false)">👥 2 Jogadores</button>
+<button onclick="startPong(true)">🤖 Contra Bot</button><br>
+<canvas id="pongCanvas" width="300" height="200"></canvas>
+<div class="rank">🏆 Pontos: <span id="pongRank">0</span></div>
+<button onclick="back()">⬅ Voltar</button>
+</div>
+
+<!-- LIG-4 -->
+<div id="lig4" class="box hidden">
+<h2>🔴🟡 Lig-4</h2>
+<button onclick="lig4Mode='2p';resetLig4()">👥 2 Jogadores</button>
+<button onclick="lig4Mode='bot';resetLig4()">🤖 Contra Bot</button>
+<div id="lig4Board"></div>
+<div class="rank">🏆 Vitórias: <span id="lig4Rank">0</span></div>
+<button onclick="back()">⬅ Voltar</button>
+</div>
+
+<!-- ACERTE O ALVO -->
+<div id="alvo" class="box hidden">
+<h2>🎯 Acerte o Alvo</h2>
+<button onclick="startAlvo()">▶ Jogar</button>
+<p>Pontos: <span id="alvoPts">0</span></p>
+<div id="alvoBox" style="width:200px;height:200px;margin:auto;background:#222;position:relative"></div>
+<div class="rank">🏆 Recorde: <span id="alvoRank">0</span></div>
+<button onclick="back()">⬅ Voltar</button>
+</div>
+
+<!-- CORRIDA -->
+<div id="corrida" class="box hidden">
+<h2>🏁 Corrida</h2>
+<p>Aperta rápido!</p>
+<p>P1 (A): <span id="r1">0</span> | P2 (L): <span id="r2">0</span></p>
+<div class="rank">🏆 Vitórias: <span id="corridaRank">0</span></div>
+<button onclick="back()">⬅ Voltar</button>
+</div>
+
+<script>
+// ===== CLIQUE =====
+let c1=0,c2=0,clickBot=false,clickBest=+localStorage.clickBest||0;
+document.getElementById("clickRank").innerText=clickBest;
+function startClick(bot){
+c1=0;c2=0;clickBot=bot;
+updateClick();
+if(bot) setInterval(()=>{c2++;updateClick()},600);
+}
+function clickP1(){c1++;saveClick()}
+function clickP2(){if(!clickBot){c2++;saveClick()}}
+function updateClick(){
+c1Span.innerText=c1;c2Span.innerText=c2;
+}
+const c1Span=document.getElementById("c1");
+const c2Span=document.getElementById("c2");
+function saveClick(){
+updateClick();
+let m=Math.max(c1,c2);
+if(m>clickBest){clickBest=m;localStorage.clickBest=clickBest;document.getElementById("clickRank").innerText=clickBest;}
+}
+
+// ===== ADIVINHE =====
+let secret=Math.floor(Math.random()*10)+1;
+let guessWins=+localStorage.guessWins||0;
+document.getElementById("guessRank").innerText=guessWins;
+function guessPlay(){
+let v=+document.getElementById("guessInput").value;
+if(v==secret){
+document.getElementById("guessStatus").innerText="Acertou! 🎉";
+guessWins++;localStorage.guessWins=guessWins;
+document.getElementById("guessRank").innerText=guessWins;
+secret=Math.floor(Math.random()*10)+1;
+}else document.getElementById("guessStatus").innerText="Errou 😅";
+}
+
+// ===== PONG =====
+const pctx=document.getElementById("pongCanvas").getContext("2d");
+let px=140,py=90,bx=150,by=100,dx=2,dy=2,pongBot=false,pongPts=0,pi;
+function startPong(bot){
+pongBot=bot;pongPts=0;
+clearInterval(pi);
+pi=setInterval(pongGame,20);
+}
+document.addEventListener("keydown",e=>{
+if(e.key=="w")py-=10;
+if(e.key=="s")py+=10;
+});
+function pongGame(){
+pctx.clearRect(0,0,300,200);
+if(pongBot) px+=Math.sign(by-px)*3;
+bx+=dx;by+=dy;
+if(by<0||by>200)dy*=-1;
+if(bx<10&&Math.abs(by-py)<30){dx*=-1;pongPts++}
+if(bx>290)dx*=-1;
+pctx.fillRect(5,py,5,60);
+pctx.fillRect(290,px,5,60);
+pctx.fillRect(bx,by,5,5);
+document.getElementById("pongRank").innerText=pongPts;
+}
+
+// ===== LIG-4 (simples) =====
+let lig4Mode="2p",lig4Wins=+localStorage.lig4Wins||0;
+document.getElementById("lig4Rank").innerText=lig4Wins;
+function resetLig4(){
+document.getElementById("lig4Board").innerHTML="(Lig-4 simples em grade aqui)";
+}
+
+// ===== ALVO =====
+let alvoPts=0,alvoBest=+localStorage.alvoBest||0;
+document.getElementById("alvoRank").innerText=alvoBest;
+function startAlvo(){
+alvoPts=0;
+spawnAlvo();
+}
+function spawnAlvo(){
+let box=document.getElementById("alvoBox");
+box.innerHTML="";
+let a=document.createElement("div");
+a.style.width="20px";a.style.height="20px";
+a.style.background="red";
+a.style.position="absolute";
+a.style.left=Math.random()*180+"px";
+a.style.top=Math.random()*180+"px";
+a.onclick=()=>{
+alvoPts++;document.getElementById("alvoPts").innerText=alvoPts;
+if(alvoPts>alvoBest){alvoBest=alvoPts;localStorage.alvoBest=alvoBest;document.getElementById("alvoRank").innerText=alvoBest;}
+spawnAlvo();
+};
+box.appendChild(a);
+}
+
+// ===== CORRIDA =====
+let r1=0,r2=0,corridaWins=+localStorage.corridaWins||0;
+document.getElementById("corridaRank").innerText=corridaWins;
+document.addEventListener("keydown",e=>{
+if(e.key=="a")r1++;
+if(e.key=="l")r2++;
+document.getElementById("r1").innerText=r1;
+document.getElementById("r2").innerText=r2;
+if(r1>=20||r2>=20){
+corridaWins++;localStorage.corridaWins=corridaWins;
+document.getElementById("corridaRank").innerText=corridaWins;
+}
+});
+</script>
+<!-- ===== PARTE 3 – JOGO DE AVENTURA ===== -->
+
+<div id="aventura" class="box hidden">
+<h2>🎮 Aventura 2D</h2>
+
+<div id="charSelect">
+<p>Escolha o personagem:</p>
+<button onclick="selectChar('red')">🗡️ Guerreiro</button>
+<button onclick="selectChar('green')">🏹 Arqueiro</button>
+<button onclick="selectChar('purple')">🔮 Mago</button>
+<button onclick="selectChar('black')">🥷 Ninja</button>
+<button onclick="selectChar('gray')">🤖 Robô</button>
+<p>Modo:</p>
+<button onclick="startAdventure(1)">👤 1 Jogador</button>
+<button onclick="startAdventure(2)">👥 2 Jogadores</button>
+</div>
+
+<canvas id="advCanvas" width="300" height="200" class="hidden"></canvas>
+
+<p class="rank">🏆 Recorde: <span id="advRank">0</span></p>
+<button onclick="back()">⬅ Voltar</button>
+</div>
+
+<script>
+// ===== RANKING =====
+let advRecord = +localStorage.advRecord || 0;
+document.getElementById("advRank").innerText = advRecord;
+
+// ===== VARIÁVEIS =====
+const actx = document.getElementById("advCanvas").getContext("2d");
+let players = [];
+let charColor = "red";
+let level = 1;
+let advScore = 0;
+let advLoop;
+
+// ===== SELEÇÃO =====
+function selectChar(c){
+charColor = c;
+}
+
+// ===== INICIAR =====
+function startAdventure(qtd){
+document.getElementById("charSelect").classList.add("hidden");
+const canvas = document.getElementById("advCanvas");
+canvas.classList.remove("hidden");
+
+players = [];
+for(let i=0;i<qtd;i++){
+players.push({
+x:20,
+y:150 - i*30,
+color: charColor,
+vy:0
+});
+}
+level = 1;
+advScore = 0;
+clearInterval(advLoop);
+advLoop = setInterval(gameAdv, 30);
+}
+
+// ===== CONTROLES =====
+document.addEventListener("keydown",e=>{
+if(e.key=="ArrowUp") players[0].vy = -5;
+if(e.key=="w" && players[1]) players[1].vy = -5;
+});
+
+// ===== GAME LOOP =====
+function gameAdv(){
+actx.clearRect(0,0,300,200);
+
+// chão
+actx.fillStyle="#444";
+actx.fillRect(0,180,300,20);
+
+// jogadores
+players.forEach(p=>{
+p.vy += 0.3;
+p.y += p.vy;
+if(p.y>160){p.y=160;p.vy=0}
+actx.fillStyle=p.color;
+actx.fillRect(p.x,p.y,15,15);
+});
+
+// obstáculo
+actx.fillStyle="yellow";
+actx.fillRect(300-level*20,160,10,20);
+
+// colisão
+players.forEach(p=>{
+if(p.x+15 > 300-level*20 && p.y+15 > 160){
+endAdventure();
+}
+});
+
+// avanço
+level += 0.02;
+advScore++;
+
+}
+
+// ===== FIM =====
+function endAdventure(){
+clearInterval(advLoop);
+if(advScore > advRecord){
+advRecord = advScore;
+localStorage.advRecord = advRecord;
+document.getElementById("advRank").innerText = advRecord;
+}
+alert("Fim de jogo! Pontos: "+advScore);
+location.reload();
+}
+  </script>
